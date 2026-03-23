@@ -1,30 +1,35 @@
-import json
-from kafka import KafkaConsumer
+from confluent_kafka import Consumer
 
-BOOTSTRAP_SERVERS = "localhost:9092"
+BOOTSTRAP_SERVERS = "127.0.0.1:9092"
 TOPIC = "orders"
 GROUP_ID = "orders-consumer-group"
 
-def create_consumer() -> KafkaConsumer:
-    return KafkaConsumer(
-        TOPIC,
-        bootstrap_servers=BOOTSTRAP_SERVERS,
-        value_deserializer=lambda v: json.loads(v.decode("utf-8")),
-        key_deserializer=lambda k: k.decode("utf-8") if k else None,
-        group_id=GROUP_ID,
-        auto_offset_reset="earliest",
-        enable_auto_commit=True
-    )
+def create_consumer() -> Consumer:
+
+    config = {
+        "bootstrap.servers": BOOTSTRAP_SERVERS,
+        "group.id": GROUP_ID,
+        "auto.offset.reset": "earliest"
+    }
+
+    return Consumer(config)
 
 def main():
+    print("Consumer started")
     consumer = create_consumer()
+    consumer.subscribe([TOPIC])
 
     try:
-        for message in consumer:
-            order = message.value
-            print(order)
+        while True:
+            msg = consumer.poll(1.0)
+            if msg is None:
+                pass
+            elif msg.error():
+                print(f"ERROR: {msg.error()}")
+            else:
+                print(f"Consumed event from topic {msg.topic()}: key = {msg.key().decode("utf-8")} value = {msg.value().decode("utf-8")}")
     except KeyboardInterrupt:
-        print("Stopped")
+        print("Consumer stopped")
     finally:
         consumer.close()
         print("Consumer closed")

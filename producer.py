@@ -1,44 +1,45 @@
-import json
 import time
-from kafka import KafkaProducer
-from kafka.partitioner.default import random
-from datetime import datetime
 
-BOOTSTRAP_SERVERS="localhost:9092"
+from random import choice
+from confluent_kafka import Producer
+
+BOOTSTRAP_SERVERS="127.0.0.1:9092"
 TOPIC = "orders"
 
-def create_producer() -> KafkaProducer:
-    return KafkaProducer(
-        bootstrap_servers=BOOTSTRAP_SERVERS,
-        value_serializer=lambda v: json.dumps(v).encode("utf-8"),
-        key_serializer=lambda k: k.encode("utf-8"),
-    )
+def create_producer() -> Producer:
 
-def make_order(order_id: int) -> dict:
-    items = ["Apple", "Banana", "Orange", "Grape"]
-    return {
-        "order_id": order_id,
-        "item": random.choice(items),
-        "quantity": random.randint(1, 10),
-        "price": round(random.uniform(100, 1000), 2),
-        "timestamp": datetime.now().isoformat(),
+    config = {
+        "bootstrap.servers": BOOTSTRAP_SERVERS,
+        "acks": "all"
     }
 
+    return Producer(config)
+
+def delivery_callback(err, msg):
+    if err:
+        print(f"ERROR: Message failed delivery: {err}")
+    else:
+        print(f"Produced event to topic {msg.topic()}: key = {msg.key().decode("utf-8")} value = {msg.value().decode("utf-8")}")
+
 def main():
+    print("Producer started")
     producer = create_producer()
 
+    user_ids = ['eabara', 'jsmith', 'sgarcia', 'jbernard', 'htanaka', 'awalther']
+    products = ['book', 'alarm clock', 't-shirts', 'gift card', 'batteries']
+
     try:
-        for i in range(1, 11):
-            order = make_order(i)
-            key=f"order-{i}"
-            future = producer.send(TOPIC, key=key, value=order)
-            record_metadata = future.get(timeout=10)
+        for _ in range(1, 11):
+            product = choice(products)
+            user_id = choice(user_ids)
+            producer.produce(topic=TOPIC, value=product, key=user_id, callback=delivery_callback)
             time.sleep(0.5)
+
+            producer.poll(0)
     except KeyboardInterrupt:
         print("Stopped")
     finally:
         producer.flush()
-        producer.close()
         print("Producer closed")
 
 if __name__ == "__main__":
