@@ -76,17 +76,19 @@ TOPIC = "orders"
 トピックを物理的に分割したもの。Kafka の並列性とスケールの源泉。
 
 ```mermaid
-block-beta
-    columns 1
-    block:topic["Topic: orders"]
-        block:p0["Partition 0"]
-            m0["msg0"] m3["msg3"] m6["msg6"]
+flowchart TD
+    subgraph topic["Topic: orders"]
+        subgraph p0["Partition 0"]
+            direction LR
+            m0["msg0"] --> m3["msg3"] --> m6["msg6"]
         end
-        block:p1["Partition 1"]
-            m1["msg1"] m4["msg4"] m7["msg7"]
+        subgraph p1["Partition 1"]
+            direction LR
+            m1["msg1"] --> m4["msg4"] --> m7["msg7"]
         end
-        block:p2["Partition 2"]
-            m2["msg2"] m5["msg5"] m8["msg8"]
+        subgraph p2["Partition 2"]
+            direction LR
+            m2["msg2"] --> m5["msg5"] --> m8["msg8"]
         end
     end
 ```
@@ -107,10 +109,10 @@ future = producer.send(TOPIC, key=key, value=order)
 Partition 内のメッセージに付与される**連番の位置情報**。0 始まり。
 
 ```mermaid
-block-beta
-    columns 1
-    block:p0["Partition 0"]
-        o0["offset=0"] o1["offset=1"] o2["offset=2"] o3["offset=3"] o4["..."]
+flowchart LR
+    subgraph p0["Partition 0"]
+        direction LR
+        o0["offset=0"] --> o1["offset=1"] --> o2["offset=2"] --> o3["offset=3"] --> o4["..."]
     end
 ```
 
