@@ -27,7 +27,8 @@ def main():
             elif msg.error():
                 print(f"ERROR: {msg.error()}")
             else:
-                print(f"Consumed event from topic {msg.topic()}: key = {msg.key().decode("utf-8")} value = {msg.value().decode("utf-8")}")
+                key = msg.key().decode('utf-8') if msg.key() is not None else None
+                print(f"Consumed event from topic {msg.topic()}: key = {key} value = {msg.value().decode('utf-8')}")
     except KeyboardInterrupt:
         print("Consumer stopped")
     finally:
